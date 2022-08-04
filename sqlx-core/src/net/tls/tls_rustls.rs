@@ -1,22 +1,79 @@
-use crate::net::CertificateInput;
-use rustls::{
-    client::{ServerCertVerified, ServerCertVerifier, WebPkiVerifier},
-    ClientConfig, Error as TlsError, OwnedTrustAnchor, RootCertStore, ServerName,
-};
-use std::io::Cursor;
+use futures_util::future;
+use std::io;
+use std::io::{Cursor, Read, Write};
 use std::sync::Arc;
+use std::task::{Context, Poll};
 use std::time::SystemTime;
 
-use crate::error::Error;
+use rustls::{
+    client::{ServerCertVerified, ServerCertVerifier, WebPkiVerifier},
+    ClientConfig, ClientConnection, Error as TlsError, OwnedTrustAnchor, RootCertStore, ServerName,
+};
 
-pub async fn configure_tls_connector(
-    accept_invalid_certs: bool,
-    accept_invalid_hostnames: bool,
-    root_cert_path: Option<&CertificateInput>,
-) -> Result<sqlx_rt::TlsConnector, Error> {
+use crate::error::Error;
+use crate::io::ReadBuf;
+use crate::net::tls::util::StdSocket;
+use crate::net::tls::{CertificateInput, TlsConfig};
+use crate::net::{Socket, WithSocket};
+
+pub struct RustlsSocket<S: Socket> {
+    inner: StdSocket<S>,
+    state: ClientConnection,
+    close_notify_sent: bool,
+}
+
+impl<S: Socket> RustlsSocket<S> {
+    fn poll_complete_io(&mut self, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
+        loop {
+            match self.state.complete_io(&mut self.inner) {
+                Err(e) if e.kind() == io::ErrorKind::WouldBlock => {
+                    futures_util::ready!(self.inner.poll_ready(cx))?;
+                }
+                ready => return Poll::Ready(ready.map(|_| ())),
+            }
+        }
+    }
+
+    async fn complete_io(&mut self) -> io::Result<()> {
+        future::poll_fn(|cx| self.poll_complete_io(cx)).await
+    }
+}
+
+impl<S: Socket> Socket for RustlsSocket<S> {
+    fn try_read(&mut self, buf: &mut dyn ReadBuf) -> io::Result<usize> {
+        self.state.reader().read(buf.init_mut())
+    }
+
+    fn try_write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.state.writer().write(buf)
+    }
+
+    fn poll_read_ready(&mut self, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
+        self.poll_complete_io(cx)
+    }
+
+    fn poll_write_ready(&mut self, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
+        self.poll_complete_io(cx)
+    }
+
+    fn poll_shutdown(&mut self, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
+        if !self.close_notify_sent {
+            self.state.send_close_notify();
+            self.close_notify_sent = true;
+        }
+
+        futures_util::ready!(self.poll_complete_io(cx))?;
+        self.inner.socket.poll_shutdown(cx)
+    }
+}
+
+pub async fn handshake<S>(socket: S, tls_config: TlsConfig<'_>) -> Result<RustlsSocket<S>, Error>
+where
+    S: Socket,
+{
     let config = ClientConfig::builder().with_safe_defaults();
 
-    let config = if accept_invalid_certs {
+    let config = if tls_config.accept_invalid_certs {
         config
             .with_custom_certificate_verifier(Arc::new(DummyTlsVerifier))
             .with_no_client_auth()
@@ -30,7 +87,7 @@ pub async fn configure_tls_connector(
             )
         }));
 
-        if let Some(ca) = root_cert_path {
+        if let Some(ca) = tls_config.root_cert_path {
             let data = ca.data().await?;
             let mut cursor = Cursor::new(data);
 
@@ -43,7 +100,7 @@ pub async fn configure_tls_connector(
             }
         }
 
-        if accept_invalid_hostnames {
+        if tls_config.accept_invalid_hostnames {
             let verifier = WebPkiVerifier::new(cert_store, None);
 
             config
@@ -56,7 +113,18 @@ pub async fn configure_tls_connector(
         }
     };
 
-    Ok(Arc::new(config).into())
+    let host = rustls::ServerName::try_from(tls_config.hostname).map_err(Error::tls)?;
+
+    let mut socket = RustlsSocket {
+        inner: StdSocket::new(socket),
+        state: ClientConnection::new(Arc::new(config), host).map_err(Error::tls)?,
+        close_notify_sent: false,
+    };
+
+    // Performs the TLS handshake or bails
+    socket.complete_io().await?;
+
+    Ok(socket)
 }
 
 struct DummyTlsVerifier;

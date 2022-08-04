@@ -134,35 +134,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "async-native-tls"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d57d4cec3c647232e1094dc013546c0b33ce785d8aeb251e1f20dfaf8a9a13fe"
-dependencies = [
- "futures-util",
- "native-tls",
- "thiserror",
- "url",
-]
-
-[[package]]
-name = "async-process"
-version = "1.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf2c06e30a24e8c78a3987d07f0930edf76ef35e027e7bdb063fccafdad1f60c"
-dependencies = [
- "async-io",
- "blocking",
- "cfg-if",
- "event-listener",
- "futures-lite",
- "libc",
- "once_cell",
- "signal-hook",
- "winapi",
-]
-
-[[package]]
 name = "async-std"
 version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -173,7 +144,6 @@ dependencies = [
  "async-global-executor",
  "async-io",
  "async-lock",
- "async-process",
  "crossbeam-utils",
  "futures-channel",
  "futures-core",
@@ -1149,17 +1119,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "futures-rustls"
-version = "0.22.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e01fe9932a224b72b45336d96040aa86386d674a31d0af27d800ea7bc8ca97fe"
-dependencies = [
- "futures-io",
- "rustls",
- "webpki",
 ]
 
 [[package]]
@@ -2594,16 +2553,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "signal-hook"
-version = "0.3.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a253b5e89e2698464fc26b545c9edceb338e18a89effeeecfea192c3025be29d"
-dependencies = [
- "libc",
- "signal-hook-registry",
-]
-
-[[package]]
 name = "signal-hook-registry"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2687,7 +2636,6 @@ dependencies = [
  "serde_json",
  "sqlx-core",
  "sqlx-macros",
- "sqlx-rt",
  "sqlx-test",
  "time 0.3.11",
  "tokio",
@@ -2704,7 +2652,6 @@ dependencies = [
  "dotenvy",
  "once_cell",
  "sqlx",
- "sqlx-rt",
 ]
 
 [[package]]
@@ -2737,6 +2684,8 @@ name = "sqlx-core"
 version = "0.6.1"
 dependencies = [
  "ahash",
+ "async-io",
+ "async-std",
  "atoi",
  "base64",
  "bigdecimal",
@@ -2759,6 +2708,7 @@ dependencies = [
  "futures-core",
  "futures-executor",
  "futures-intrusive",
+ "futures-io",
  "futures-util",
  "generic-array",
  "git2",
@@ -2775,6 +2725,7 @@ dependencies = [
  "mac_address",
  "md-5",
  "memchr",
+ "native-tls",
  "num-bigint",
  "once_cell",
  "paste",
@@ -2792,7 +2743,6 @@ dependencies = [
  "smallvec",
  "sqlformat",
  "sqlx",
- "sqlx-rt",
  "stringprep",
  "thiserror",
  "time 0.3.11",
@@ -2898,6 +2848,7 @@ dependencies = [
 name = "sqlx-macros"
 version = "0.6.1"
 dependencies = [
+ "async-std",
  "dotenvy",
  "either",
  "heck 0.4.0",
@@ -2909,23 +2860,9 @@ dependencies = [
  "serde_json",
  "sha2",
  "sqlx-core",
- "sqlx-rt",
  "syn",
- "url",
-]
-
-[[package]]
-name = "sqlx-rt"
-version = "0.6.1"
-dependencies = [
- "async-native-tls",
- "async-std",
- "futures-rustls",
- "native-tls",
- "once_cell",
  "tokio",
- "tokio-native-tls",
- "tokio-rustls",
+ "url",
 ]
 
 [[package]]
@@ -3174,27 +3111,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "tokio-native-tls"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f7d995660bd2b7f8c1568414c1126076c13fbb725c40112dc0120b78eb9b717b"
-dependencies = [
- "native-tls",
- "tokio",
-]
-
-[[package]]
-name = "tokio-rustls"
-version = "0.23.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c43ee83903113e03984cb9e5cebe6c04a5116269e900e3ddba8f068a62adda59"
-dependencies = [
- "rustls",
- "tokio",
- "webpki",
 ]
 
 [[package]]

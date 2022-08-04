@@ -321,13 +321,7 @@ impl Drop for PgListener {
             };
 
             // Unregister any listeners before returning the connection to the pool.
-            #[cfg(not(feature = "_rt-async-std"))]
-            if let Ok(handle) = sqlx_rt::Handle::try_current() {
-                handle.spawn(fut);
-            }
-
-            #[cfg(feature = "_rt-async-std")]
-            sqlx_rt::spawn(fut);
+            crate::rt::spawn(fut);
         }
     }
 }

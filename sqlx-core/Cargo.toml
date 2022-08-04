@@ -33,7 +33,9 @@ postgres = [
     "json",
     "dirs",
     "whoami",
-    "hkdf"
+    "hkdf",
+    # Dev dependency
+    "sqlx/postgres"
 ]
 mysql = [
     "sha-1",
@@ -43,8 +45,16 @@ mysql = [
     "digest",
     "rand",
     "rsa",
+    # Dev dependency
+    "sqlx/mysql"
 ]
-sqlite = ["libsqlite3-sys", "futures-executor", "flume"]
+sqlite = [
+    "libsqlite3-sys",
+    "futures-executor",
+    "flume",
+    # Dev dependency
+    "sqlx/sqlite"
+]
 mssql = ["uuid", "encoding_rs", "regex"]
 any = []
 
@@ -66,37 +76,46 @@ json = ["serde", "serde_json"]
 
 # runtimes
 runtime-actix-native-tls = ["runtime-tokio-native-tls"]
+runtime-actix-rustls = ['runtime-tokio-rustls']
+
 runtime-async-std-native-tls = [
-    "sqlx-rt/runtime-async-std-native-tls",
-    "sqlx/runtime-async-std-native-tls",
+    "runtime-async-std",
     "_tls-native-tls",
     "_rt-async-std",
+    # Dev dependency
+    "sqlx/runtime-async-std-native-tls",
 ]
+runtime-async-std-rustls = [
+    "runtime-async-std",
+    "_tls-rustls",
+    "_rt-async-std",
+    # Dev dependency
+    "sqlx/runtime-async-std-rustls",
+]
+
 runtime-tokio-native-tls = [
-    "sqlx-rt/runtime-tokio-native-tls",
-    "sqlx/runtime-tokio-native-tls",
+    "runtime-tokio",
     "_tls-native-tls",
     "_rt-tokio",
+    # Dev dependency
+    "sqlx/runtime-tokio-native-tls",
 ]
 
-runtime-actix-rustls = ['runtime-tokio-rustls']
-runtime-async-std-rustls = [
-    "sqlx-rt/runtime-async-std-rustls",
-    "sqlx/runtime-async-std-rustls",
-    "_tls-rustls",
-    "_rt-async-std",
-]
 runtime-tokio-rustls = [
-    "sqlx-rt/runtime-tokio-rustls",
-    "sqlx/runtime-tokio-rustls",
+    "runtime-tokio",
     "_tls-rustls",
-    "_rt-tokio"
+    "_rt-tokio",
+    # Dev dependency
+    "sqlx/runtime-tokio-rustls",
 ]
+
+runtime-tokio = ["_rt-tokio"]
+runtime-async-std = ["_rt-async-std"]
 
 # for conditional compilation
-_rt-async-std = []
-_rt-tokio = ["tokio-stream"]
-_tls-native-tls = []
+_rt-async-std = ["async-io", "async-std"]
+_rt-tokio = ["tokio", "tokio-stream"]
+_tls-native-tls = ["native-tls"]
 _tls-rustls = ["rustls", "rustls-pemfile", "webpki-roots"]
 
 # support offline/decoupled building (enables serialization of `Describe`)
@@ -106,7 +125,6 @@ offline = ["serde", "either/serde"]
 paste = "1.0.6"
 ahash = "0.7.6"
 atoi = "1.0"
-sqlx-rt = { path = "../sqlx-rt", version = "0.6.1" }
 base64 = { version = "0.13.0", default-features = false, optional = true, features = ["std"] }
 bigdecimal_ = { version = "0.3.0", optional = true, package = "bigdecimal" }
 rust_decimal = { version = "1.19.0", optional = true }
@@ -123,7 +141,8 @@ encoding_rs = { version = "0.8.30", optional = true }
 either = "1.6.1"
 futures-channel = { version = "0.3.19", default-features = false, features = ["sink", "alloc", "std"] }
 futures-core = { version = "0.3.19", default-features = false }
-futures-intrusive = "0.4.0"
+futures-io = { version = "0.3.19" }
+futures-intrusive = { version = "0.4.0" }
 futures-util = { version = "0.3.19", default-features = false, features = ["alloc", "sink"] }
 # used by the SQLite worker thread to block on the async mutex that locks the database handle
 futures-executor = { version = "0.3.19", optional = true }
@@ -177,6 +196,16 @@ event-listener = "2.5.2"
 
 dotenvy = "0.15"
 
+# _rt-tokio features
+tokio = { version = "1.20.1", optional = true, features = ["net", "io-util", "rt"] }
+
+# _rt-async-std features
+async-io = { version = "1.7.0", optional = true }
+async-std = { version = "1.12.0", optional = true }
+
+# TLS features
+native-tls = { version = "0.2.10", optional = true }
+
 [dev-dependencies]
-sqlx = { version = "0.6.1", path = "..", features = ["postgres", "sqlite", "mysql"] }
+sqlx = { version = "0.6.1", path = ".." }
 tokio = { version = "1", features = ["rt"] }

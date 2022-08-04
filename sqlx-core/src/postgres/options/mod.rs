@@ -3,12 +3,14 @@ use std::env::var;
 use std::fmt::{Display, Write};
 use std::path::{Path, PathBuf};
 
+pub use ssl_mode::PgSslMode;
+
+use crate::{connection::LogSettings, net::tls::CertificateInput};
+
 mod connect;
 mod parse;
 mod pgpass;
 mod ssl_mode;
-use crate::{connection::LogSettings, net::CertificateInput};
-pub use ssl_mode::PgSslMode;
 
 /// Options and flags which can be used to configure a PostgreSQL connection.
 ///
